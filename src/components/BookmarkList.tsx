@@ -1,61 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { type Bookmark } from "@/types/bookmark";
 import BookmarkItem from "./BookmarkItem";
 
 interface BookmarkListProps {
-  userId: string;
-  initialBookmarks: Bookmark[];
+  bookmarks: Bookmark[];
+  onBookmarkDeleted?: (id: string) => void;
 }
 
-export default function BookmarkList({ userId, initialBookmarks }: BookmarkListProps) {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(initialBookmarks);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    // Subscribe to real-time changes on the bookmarks table, filtered by user_id
-    const channel = supabase
-      .channel("bookmarks-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "bookmarks",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const newBookmark = payload.new as Bookmark;
-          setBookmarks((prev) => {
-            // Avoid duplicates (e.g., if the insert was done by this tab)
-            if (prev.some((b) => b.id === newBookmark.id)) return prev;
-            return [newBookmark, ...prev];
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "bookmarks",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const deletedId = payload.old.id as string;
-          setBookmarks((prev) => prev.filter((b) => b.id !== deletedId));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
-
+export default function BookmarkList({ bookmarks, onBookmarkDeleted }: BookmarkListProps) {
   if (bookmarks.length === 0) {
     return (
       <div className="text-center py-20">
@@ -84,7 +37,7 @@ export default function BookmarkList({ userId, initialBookmarks }: BookmarkListP
       </div>
       <div className="space-y-3">
         {bookmarks.map((bookmark) => (
-          <BookmarkItem key={bookmark.id} bookmark={bookmark} />
+          <BookmarkItem key={bookmark.id} bookmark={bookmark} onDeleted={onBookmarkDeleted} />
         ))}
       </div>
     </div>

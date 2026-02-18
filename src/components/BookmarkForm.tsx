@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { type Bookmark } from "@/types/bookmark";
 
 interface BookmarkFormProps {
   userId: string;
+  onBookmarkAdded?: (bookmark: Bookmark) => void;
 }
 
-export default function BookmarkForm({ userId }: BookmarkFormProps) {
+export default function BookmarkForm({ userId, onBookmarkAdded }: BookmarkFormProps) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,19 +38,26 @@ export default function BookmarkForm({ userId }: BookmarkFormProps) {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: insertError } = await supabase.from("bookmarks").insert({
-      title: trimmedTitle,
-      url: trimmedUrl,
-      user_id: userId,
-    });
+    const { data, error: insertError } = await supabase
+      .from("bookmarks")
+      .insert({
+        title: trimmedTitle,
+        url: trimmedUrl,
+        user_id: userId,
+      })
+      .select()
+      .single();
 
     setLoading(false);
 
-    if (insertError) {
+    if (insertError || !data) {
       setError("Failed to add bookmark. Please try again.");
       console.error("Insert error:", insertError);
       return;
     }
+
+    // Optimistic update — notify parent immediately
+    onBookmarkAdded?.(data as Bookmark);
 
     // Clear form on success
     setTitle("");

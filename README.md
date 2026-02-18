@@ -4,7 +4,7 @@ A real-time bookmark manager built with **Next.js 15 (App Router)**, **Supabase*
 
 ## Live Demo
 
-🔗 **Vercel URL:** _[Add your deployed URL here]_
+🔗 **Vercel URL:** _https://astrabit-two.vercel.app_
 
 ---
 
@@ -14,8 +14,10 @@ A real-time bookmark manager built with **Next.js 15 (App Router)**, **Supabase*
 - **Add Bookmarks** — Save any URL with a title
 - **Private Per User** — Each user only sees their own bookmarks (enforced via Row Level Security)
 - **Real-Time Sync** — Add or delete a bookmark in one tab and it instantly appears/disappears in every other open tab (powered by Supabase Realtime)
+- **Optimistic Updates** — Bookmarks appear/disappear instantly on the same page without waiting for real-time events, ensuring reliable UX even on serverless platforms like Vercel
 - **Delete Bookmarks** — Remove any bookmark you no longer need
-- **Responsive Design** — Works on desktop and mobile
+- **Dark / Light Theme** — Toggle between dark and light mode (persisted, with system preference detection)
+- **Responsive Design** — Side-by-side layout on desktop, stacked on mobile
 
 ---
 
@@ -28,6 +30,7 @@ A real-time bookmark manager built with **Next.js 15 (App Router)**, **Supabase*
 | Auth           | Supabase Auth (Google OAuth)         |
 | Database       | Supabase (PostgreSQL)                |
 | Real-time      | Supabase Realtime (Postgres Changes) |
+| Theming        | next-themes                          |
 | Hosting        | Vercel                               |
 
 ---
@@ -43,8 +46,7 @@ A real-time bookmark manager built with **Next.js 15 (App Router)**, **Supabase*
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<your-username>/smart-bookmark-app.git
-cd smart-bookmark-app
+git clone https://github.com/psc856/AstraBit-Challenge.git
 npm install
 ```
 
@@ -55,7 +57,7 @@ npm install
 3. Go to **Authentication → Providers → Google** and enable it:
    - Add your Google Client ID and Client Secret (from [Google Cloud Console](https://console.cloud.google.com/apis/credentials))
    - Set the redirect URL to: `https://<your-supabase-ref>.supabase.co/auth/v1/callback`
-4. Copy your **Project URL** and **Anon Key** from **Settings → API**.
+4. Copy your **Project URL** and **Anon Key** from **Settings → API and Data API**.
 
 ### 3. Configure environment variables
 
@@ -92,15 +94,18 @@ src/
 │   ├── auth/
 │   │   ├── callback/route.ts    # OAuth callback handler
 │   │   └── auth-code-error/     # Error page for failed auth
-│   ├── globals.css              # Tailwind CSS imports
-│   ├── layout.tsx               # Root layout
+│   ├── globals.css              # Tailwind CSS imports + dark mode config
+│   ├── layout.tsx               # Root layout with ThemeProvider
 │   └── page.tsx                 # Main page (landing + dashboard)
 ├── components/
-│   ├── BookmarkForm.tsx         # Form to add new bookmarks
+│   ├── BookmarkForm.tsx         # Form to add new bookmarks (with optimistic callback)
 │   ├── BookmarkItem.tsx         # Single bookmark card with delete
-│   ├── BookmarkList.tsx         # List with real-time subscriptions
-│   ├── Header.tsx               # App header with user info & sign out
-│   └── LoginButton.tsx          # Google sign-in button
+│   ├── BookmarkList.tsx         # Bookmark list display (receives props)
+│   ├── Dashboard.tsx            # Dashboard wrapper — owns state, Realtime & optimistic updates
+│   ├── Header.tsx               # App header with user info, theme toggle & sign out
+│   ├── LoginButton.tsx          # Google sign-in button
+│   ├── ThemeProvider.tsx        # next-themes provider wrapper
+│   └── ThemeToggle.tsx          # Dark / light mode toggle button
 ├── lib/
 │   └── supabase/
 │       ├── client.ts            # Browser Supabase client
@@ -131,7 +136,7 @@ src/
 
 **Problem:** When adding a bookmark, the optimistic/local insert from the form AND the Realtime subscription both added the same bookmark, resulting in duplicates.
 
-**Solution:** In the Realtime `INSERT` handler inside `BookmarkList`, I check if the bookmark already exists in state before adding it:
+**Solution:** In the Realtime `INSERT` handler inside `Dashboard`, I check if the bookmark already exists in state before adding it:
 ```ts
 setBookmarks((prev) => {
   if (prev.some((b) => b.id === newBookmark.id)) return prev;
@@ -150,6 +155,22 @@ setBookmarks((prev) => {
 **Problem:** Even after enabling RLS, Realtime subscriptions weren't receiving events because the Supabase client in the browser wasn't authenticated — the anon key alone doesn't pass RLS policies.
 
 **Solution:** Ensured the browser Supabase client is created with `createBrowserClient` from `@supabase/ssr`, which automatically picks up the auth session from cookies. This means all Realtime subscriptions run with the user's JWT, passing RLS checks correctly.
+
+### 6. Bookmarks not updating on Vercel without page reload
+
+**Problem:** On localhost, bookmarks appeared/disappeared instantly via Supabase Realtime WebSocket. On Vercel's serverless infrastructure, WebSocket connections were unreliable — bookmarks only showed after a full page reload.
+
+**Solution:** Implemented **optimistic updates** by lifting bookmark state into a `Dashboard` component. `BookmarkForm` now uses `.insert().select().single()` to get the inserted row back and immediately calls an `onBookmarkAdded` callback. `BookmarkItem` calls `onDeleted` after a successful delete. The UI updates instantly without depending on WebSocket, while Realtime still runs in the background for cross-tab sync.
+
+### 7. Dark mode not working with Tailwind CSS v4
+
+**Problem:** After adding `next-themes` with `attribute="class"`, the `dark:` variants in Tailwind CSS had no effect. Tailwind v4 no longer uses a `tailwind.config.js` file, so the old `darkMode: "class"` setting doesn't exist.
+
+**Solution:** Added the Tailwind v4 custom variant directive directly in `globals.css`:
+```css
+@custom-variant dark (&:where(.dark, .dark *));
+```
+This tells Tailwind v4 to activate `dark:` utilities whenever the `dark` class is present on an ancestor element, which is exactly what `next-themes` sets on `<html>`.
 
 ---
 

@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import LoginButton from "@/components/LoginButton";
 import Header from "@/components/Header";
-import BookmarkForm from "@/components/BookmarkForm";
-import BookmarkList from "@/components/BookmarkList";
+import Dashboard from "@/components/Dashboard";
 import ThemeToggle from "@/components/ThemeToggle";
 import { type Bookmark } from "@/types/bookmark";
 
@@ -87,18 +86,10 @@ export default async function Home() {
       <Header user={user} />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8 items-start">
-          {/* Left: Add form (sticky on desktop) */}
-          <div className="lg:sticky lg:top-20">
-            <BookmarkForm userId={user.id} />
-          </div>
-
-          {/* Right: Bookmark list */}
-          <BookmarkList
-            userId={user.id}
-            initialBookmarks={(bookmarks as Bookmark[]) ?? []}
-          />
-        </div>
+        <Dashboard
+          userId={user.id}
+          initialBookmarks={(bookmarks as Bookmark[]) ?? []}
+        />
       </main>
     </div>
   );

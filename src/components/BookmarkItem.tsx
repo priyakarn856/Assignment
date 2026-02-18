@@ -6,9 +6,10 @@ import { type Bookmark } from "@/types/bookmark";
 
 interface BookmarkItemProps {
   bookmark: Bookmark;
+  onDeleted?: (id: string) => void;
 }
 
-export default function BookmarkItem({ bookmark }: BookmarkItemProps) {
+export default function BookmarkItem({ bookmark, onDeleted }: BookmarkItemProps) {
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -22,8 +23,10 @@ export default function BookmarkItem({ bookmark }: BookmarkItemProps) {
     if (error) {
       console.error("Delete error:", error);
       setDeleting(false);
+    } else {
+      // Optimistic delete — notify parent immediately
+      onDeleted?.(bookmark.id);
     }
-    // No need to update state — Realtime will handle removal
   };
 
   const hostname = (() => {
