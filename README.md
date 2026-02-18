@@ -43,8 +43,7 @@ A real-time bookmark manager built with **Next.js 15 (App Router)**, **Supabase*
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<your-username>/smart-bookmark-app.git
-cd smart-bookmark-app
+git clone https://github.com/psc856/AstraBit-Challenge.git
 npm install
 ```
 
@@ -55,7 +54,7 @@ npm install
 3. Go to **Authentication → Providers → Google** and enable it:
    - Add your Google Client ID and Client Secret (from [Google Cloud Console](https://console.cloud.google.com/apis/credentials))
    - Set the redirect URL to: `https://<your-supabase-ref>.supabase.co/auth/v1/callback`
-4. Copy your **Project URL** and **Anon Key** from **Settings → API**.
+4. Copy your **Project URL** and **Anon Key** from **Settings → API and Data API**.
 
 ### 3. Configure environment variables
 
@@ -152,7 +151,3 @@ setBookmarks((prev) => {
 **Solution:** Ensured the browser Supabase client is created with `createBrowserClient` from `@supabase/ssr`, which automatically picks up the auth session from cookies. This means all Realtime subscriptions run with the user's JWT, passing RLS checks correctly.
 
 ---
-
-## License
-
-MIT
