@@ -4,7 +4,7 @@ A real-time bookmark manager built with **Next.js 15 (App Router)**, **Supabase*
 
 ## Live Demo
 
-🔗 **Vercel URL:** _[Add your deployed URL here]_
+🔗 **Vercel URL:** _https://astrabit-two.vercel.app_
 
 ---
 
