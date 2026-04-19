@@ -173,3 +173,5 @@ setBookmarks((prev) => {
 This tells Tailwind v4 to activate `dark:` utilities whenever the `dark` class is present on an ancestor element, which is exactly what `next-themes` sets on `<html>`.
 
 ---
+#   A s s i g n m e n t  
+ 
